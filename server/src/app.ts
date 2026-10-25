@@ -1,6 +1,8 @@
 import express from "express"
 import cors from "cors"
 import authRoutes from "./auth/auth.routes";
+import productRoutes from "./products/products.routes";
+
 const app = express()
 
 app.use(cors())
@@ -14,4 +16,6 @@ app.get("/api/health", (_req, res) => {
 })
 
 app.use("/api/auth", authRoutes);
+
+app.use("/api/products", productRoutes)
 export default app;

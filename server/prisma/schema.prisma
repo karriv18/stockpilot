@@ -19,6 +19,53 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  products       Product[]
+  stockMovements StockMovement[]
   @@map("users")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  sku         String   @unique
+  description String?
+  price       Decimal  @db.Decimal(12, 2)
+  quantity    Int      @default(0)
+  imageUrl    String?
+
+  createdById Int
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  stockMovements StockMovement[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([createdById])
+  @@map("products")
+}
+
+model StockMovement {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  type        StockMovementType
+  quantity    Int
+  note        String?
+
+  createdById Int
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([createdById])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  IN
+  OUT
 }
