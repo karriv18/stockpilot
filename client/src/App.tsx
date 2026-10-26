@@ -1,23 +1,36 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-function App() {
+import AppLayout from "./components/layout/AppLayout";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import GuestRoute from "./routes/GuestRoute";
+
+import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import ProductsPage from "./pages/ProductsPage";
+import ProductFormPage from "./pages/ProductFormPage";
+import InventoryPage from "./pages/InventoryPage";
+
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<div>Login Page</div>} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<div>Dashboard Page</div>} />
-        <Route path="/products" element={<div>Products Page</div>} />
-        <Route path="/products/new" element={<div>Add Product Page</div>} />
-        <Route
-          path="/products/:id/edit"
-          element={<div>Edit Product Page</div>}
-        />
-        <Route path="/inventory" element={<div>Inventory Page</div>} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products/new" element={<ProductFormPage />} />
+            <Route path="/products/:id/edit" element={<ProductFormPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
