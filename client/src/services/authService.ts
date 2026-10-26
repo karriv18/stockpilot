@@ -31,7 +31,6 @@ async function request<T>(
     });
 
     const data = await response.json().catch(() => null);
-    console.log(data)
     if (!response.ok) {
         throw new Error(data?.message ?? "Something went wrong.");
     }
