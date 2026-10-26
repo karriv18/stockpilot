@@ -2,6 +2,8 @@ import express from "express"
 import cors from "cors"
 import authRoutes from "./auth/auth.routes";
 import productRoutes from "./products/products.routes";
+import inventoryRoutes from "./inventory/inventory.routes"
+import dashboardRoutes from "./dashboard/dashboard.routes";
 
 const app = express()
 
@@ -17,7 +19,11 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 
-app.use("/api/products", productRoutes)
+app.use("/api/products", productRoutes);
 
 app.use("/uploads", express.static("/app/uploads"));
+
+app.use("/api/inventory", inventoryRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
 export default app;
