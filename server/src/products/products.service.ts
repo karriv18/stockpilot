@@ -60,3 +60,11 @@ export async function updateProduct(id: number, data: ProductInput) {
 export async function deleteProduct(id: number) {
     return prisma.product.delete({ where: { id } });
 }
+
+export async function updateProductImage(id: number, imageUrl: string) {
+    return prisma.product.update({
+        where: { id },
+        data: { imageUrl },
+        include: productDetails,
+    });
+}

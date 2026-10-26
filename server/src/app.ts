@@ -18,4 +18,6 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 
 app.use("/api/products", productRoutes)
+
+app.use("/uploads", express.static("/app/uploads"));
 export default app;

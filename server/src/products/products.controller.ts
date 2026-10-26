@@ -2,6 +2,8 @@ import type { Request, Response } from "express"
 import type { AuthRequest } from "../auth/auth.middleware"
 import * as productService from "./products.service"
 import { validateProductInput } from "./products.validation"
+import fs from "node:fs/promises";
+import path from "node:path";
 
 function getId(value: string): number | null {
     if (!/^[1-9]\d*$/.test(value)) return null;
@@ -157,5 +159,42 @@ export async function removeProduct(req: AuthRequest, res: Response) {
 
         console.error("Delete product failed:", error);
         res.status(500).json({ message: "Unable to delete product" });
+    }
+}
+
+
+export async function uploadProductImageController(
+    req: AuthRequest,
+    res: Response,
+) {
+    const id = getId(req.params.id as string);
+
+    if (id === null) {
+        res.status(400).json({ message: "Invalid product ID" });
+        return;
+    }
+
+    if (!req.file) {
+        res.status(400).json({ message: "Product image is required" });
+        return;
+    }
+
+    try {
+        const product = await productService.updateProductImage(
+            id,
+            `/uploads/${req.file.filename}`,
+        );
+
+        res.status(200).json({ product });
+    } catch (error) {
+        await fs.unlink(req.file.path).catch(() => { });
+
+        if (prismaErrorCode(error) === "P2025") {
+            res.status(404).json({ message: "Product not found" });
+            return;
+        }
+
+        console.error("Upload product image failed:", error);
+        res.status(500).json({ message: "Unable to upload product image" });
     }
 }

@@ -20,6 +20,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     expose:
       - "3000"
+    volumes:
+      - product_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -46,3 +48,4 @@ services:
 
 volumes:
   postgres_data:
+  product_uploads:
