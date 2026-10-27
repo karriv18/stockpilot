@@ -13,3 +13,5 @@ server/node_modules/
 server/dist/
 
 .DS_Store
+server/uploads/*
+!server/uploads/.gitkeep
