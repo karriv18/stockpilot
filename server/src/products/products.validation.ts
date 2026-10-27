@@ -1,21 +1,27 @@
+
 export type ProductInput = {
-    name: string;
-    sku: string;
+    name?: string;
+    sku?: string;
     description?: string | null;
-    price: number;
+    price?: number;
+    quantity?: number;
 };
 
-export function validateProductInput(body: unknown, isPartial = false): { data?: ProductInput; error?: string } {
+type ValidationResult = {
+    data?: ProductInput;
+    error?: string;
+};
+
+export function validateProductInput(
+    body: unknown,
+    isPartial = false,
+): ValidationResult {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
         return { error: "A valid product object is required" };
     }
 
     const input = body as Record<string, unknown>;
-    const data: ProductInput = {
-        name: "",
-        sku: "",
-        price: 0,
-    }
+    const data: ProductInput = {};
 
     if (!isPartial || "name" in input) {
         if (
@@ -23,8 +29,11 @@ export function validateProductInput(body: unknown, isPartial = false): { data?:
             !input.name.trim() ||
             input.name.trim().length > 150
         ) {
-            return { error: "Name is required and must be 150 characters or fewer" }
+            return {
+                error: "Name is required and must be 150 characters or fewer",
+            };
         }
+
         data.name = input.name.trim();
     }
 
@@ -34,8 +43,11 @@ export function validateProductInput(body: unknown, isPartial = false): { data?:
             !input.sku.trim() ||
             input.sku.trim().length > 100
         ) {
-            return { error: "SKU is required and must be 100 characters or fewer" };
+            return {
+                error: "SKU is required and must be 100 characters or fewer",
+            };
         }
+
         data.sku = input.sku.trim();
     }
 
@@ -47,28 +59,61 @@ export function validateProductInput(body: unknown, isPartial = false): { data?:
                     ? Number(input.price)
                     : NaN;
 
-        if (!Number.isFinite(price) || price < 0 || price > 9999999999.99) {
-            return { error: "Price must be a valid non-negative amount" };
+        if (
+            !Number.isFinite(price) ||
+            price < 0 ||
+            price > 9999999999.99
+        ) {
+            return {
+                error: "Price must be a valid non-negative amount",
+            };
         }
 
         if (Math.round(price * 100) / 100 !== price) {
-            return { error: "Price must have no more than 2 decimal places" };
+            return {
+                error: "Price must have no more than 2 decimal places",
+            };
         }
 
         data.price = price;
     }
-    
+
+    if (!isPartial || "quantity" in input) {
+        const quantity =
+            typeof input.quantity === "number"
+                ? input.quantity
+                : typeof input.quantity === "string" &&
+                    input.quantity.trim() !== ""
+                    ? Number(input.quantity)
+                    : NaN;
+
+        if (!Number.isSafeInteger(quantity) || quantity < 0) {
+            return {
+                error: "Quantity must be a non-negative whole number",
+            };
+        }
+
+        data.quantity = quantity;
+    }
+
     if ("description" in input) {
         if (input.description === null) {
             data.description = null;
         } else if (typeof input.description === "string") {
             if (input.description.length > 2000) {
-                return { error: "Description must be 2000 characters or fewer" };
+                return {
+                    error: "Description must be 2000 characters or fewer",
+                };
             }
+
             data.description = input.description.trim();
         } else {
-            return { error: "Description must be text or null" };
+            return {
+                error: "Description must be text or null",
+            };
         }
+    } else if (!isPartial) {
+        data.description = null;
     }
 
     return { data };

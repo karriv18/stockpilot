@@ -28,6 +28,13 @@ export default function ProductsPage() {
 
   const token = useAuthStore((state) => state.token);
 
+  const refreshProductData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["products"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
+  };
+
   const {
     data: products = [],
     isPending,
@@ -46,7 +53,7 @@ export default function ProductsPage() {
 
     onSuccess: async () => {
       setDeleteError("");
-
+      await refreshProductData();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["products"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
@@ -203,6 +210,9 @@ export default function ProductsPage() {
               <thead className="border-y border-outline bg-background text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3">
+                    Image
+                  </th>
+                  <th scope="col" className="px-4 py-3">
                     Product
                   </th>
                   <th scope="col" className="px-4 py-3">
@@ -227,7 +237,7 @@ export default function ProductsPage() {
                 {isPending ? (
                   Array.from({ length: 4 }).map((_, index) => (
                     <tr key={index}>
-                      {Array.from({ length: 6 }).map((__, cellIndex) => (
+                      {Array.from({ length: 7 }).map((__, cellIndex) => (
                         <td key={cellIndex} className="px-4 py-5">
                           <div className="h-4 animate-pulse rounded bg-background" />
                         </td>
@@ -240,6 +250,23 @@ export default function ProductsPage() {
                       key={product.id}
                       className="transition-colors hover:bg-background/70"
                     >
+                      <td className="px-4 py-4">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            loading="lazy"
+                            className="h-12 w-12 rounded-lg border border-outline object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-outline bg-background">
+                            <Package size={20} className="text-muted" />
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-4 font-semibold">
                         {product.name}
                       </td>
@@ -297,7 +324,7 @@ export default function ProductsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12">
+                    <td colSpan={7} className="px-4 py-12">
                       <div className="flex flex-col items-center text-center">
                         {search.trim() ? (
                           <Search className="mb-3 text-muted" size={28} />

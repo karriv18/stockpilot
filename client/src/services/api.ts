@@ -12,7 +12,22 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
 
   const payload = await response.json().catch(() => null)
+  if (response.status === 401) {
+    const { clearAuth } = (
+      await import("../stores/authStore")
+    ).useAuthStore.getState();
 
+    clearAuth();
+
+    if (window.location.pathname !== "/login") {
+      window.location.replace("/login");
+    }
+
+    throw new Error(
+      payload?.message ?? "Session expired. Please log in again.",
+    );
+  }
+  
   if (!response.ok) throw new Error(payload?.message ?? payload?.error ?? `Request failed (${response.status})`)
 
   return payload as T

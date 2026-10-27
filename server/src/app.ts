@@ -1,4 +1,5 @@
 import express from "express"
+import path from "node:path";
 import cors from "cors"
 import authRoutes from "./auth/auth.routes";
 import productRoutes from "./products/products.routes";
@@ -21,7 +22,9 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/products", productRoutes);
 
-app.use("/uploads", express.static("/app/uploads"));
+app.use("/uploads", express.static(
+  path.resolve(process.cwd(), "uploads")
+));
 
 app.use("/api/inventory", inventoryRoutes);
 

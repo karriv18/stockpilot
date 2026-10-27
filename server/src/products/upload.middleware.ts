@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 
-const uploadDirectory = "/app/uploads";
+const uploadDirectory = path.resolve(process.cwd(), "uploads");
 
 fs.mkdirSync(uploadDirectory, { recursive: true });
 

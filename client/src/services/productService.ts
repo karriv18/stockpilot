@@ -125,3 +125,38 @@ export async function deleteProduct(
         method: "DELETE",
     });
 }
+
+export async function uploadProductImage(
+    id: number | string,
+    file: File,
+    token: string,
+): Promise<Product> {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(`${API_URL}/products/${id}/image`, {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+    });
+
+    const payload: unknown = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const message =
+            typeof payload === "object" &&
+                payload !== null &&
+                "message" in payload &&
+                typeof payload.message === "string"
+                ? payload.message
+                : `Image upload failed with status ${response.status}.`;
+
+        throw new Error(message);
+    }
+
+    return (payload as { product: Product }).product;
+}
+
