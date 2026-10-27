@@ -1,12 +1,28 @@
 import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowUpFromLine,
+  LoaderCircle,
+  RefreshCw,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Badge from "../components/ui/Badge";
 import Card from "../components/ui/Card";
+
+import { getProducts } from "../services/productService";
+import {
+  createInventoryMovement,
+  getInventoryMovements,
+} from "../services/inventoryService";
+import { useAuthStore } from "../stores/authStore";
 
 const schema = z.object({
   productId: z.string().min(1, "Select a product."),
@@ -15,47 +31,38 @@ const schema = z.object({
     .number()
     .int("Quantity must be a whole number.")
     .min(1, "Quantity must be at least 1."),
-  note: z.string().optional(),
+  note: z.string().max(500, "Note cannot exceed 500 characters.").optional(),
 });
 
 type MovementFormInput = z.input<typeof schema>;
 type MovementForm = z.output<typeof schema>;
 
-const recent = [
-  {
-    product: "Wireless Mouse",
-    sku: "ACC-1042",
-    type: "IN",
-    quantity: 24,
-    note: "Restock delivery",
-    date: "Oct 26, 2026",
-  },
-  {
-    product: "USB-C Hub",
-    sku: "ACC-1038",
-    type: "OUT",
-    quantity: 5,
-    note: "Order fulfillment",
-    date: "Oct 26, 2026",
-  },
-  {
-    product: "Mechanical Keyboard",
-    sku: "ACC-1021",
-    type: "IN",
-    quantity: 12,
-    note: "Restock delivery",
-    date: "Oct 25, 2026",
-  },
-];
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
 
 export default function InventoryPage() {
   const [notice, setNotice] = useState("");
+
+  const token = useAuthStore((state) => state.token);
+  const queryClient = useQueryClient();
 
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors },
   } = useForm<MovementFormInput, unknown, MovementForm>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -68,9 +75,80 @@ export default function InventoryPage() {
 
   const type = watch("type");
 
-  const onSubmit = async (_data: MovementForm) => {
-    setNotice("Movement validated. Inventory API integration is pending.");
+  const productsQuery = useQuery({
+    queryKey: ["products"],
+    queryFn: () => getProducts(token!),
+    enabled: Boolean(token),
+  });
+
+  const movementsQuery = useQuery({
+    queryKey: ["inventory-movements"],
+    queryFn: () => getInventoryMovements(token!),
+    enabled: Boolean(token),
+  });
+
+  const movementMutation = useMutation({
+    mutationFn: (data: MovementForm) => {
+      if (!token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
+      return createInventoryMovement(
+        {
+          productId: Number(data.productId),
+          type: data.type,
+          quantity: data.quantity,
+          note: data.note?.trim() || undefined,
+        },
+        token,
+      );
+    },
+
+    onSuccess: async () => {
+      setNotice("Inventory movement recorded successfully.");
+
+      reset({
+        productId: "",
+        type: type,
+        quantity: 1,
+        note: "",
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory-movements"] }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+
+    onError: (error: Error) => {
+      setNotice(error.message || "Failed to record inventory movement.");
+    },
+  });
+
+  const onSubmit = (data: MovementForm) => {
+    setNotice("");
+    movementMutation.mutate(data);
   };
+
+  if (!token) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center py-10 text-center">
+          <AlertCircle className="mb-3 text-muted" size={32} />
+          <h2 className="font-bold">Authentication required</h2>
+          <p className="mt-2 text-sm text-muted">
+            Please log in to manage inventory.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  const products = productsQuery.data ?? [];
+  const movements = movementsQuery.data ?? [];
+  const isLoading = productsQuery.isPending || movementsQuery.isPending;
+  const loadError = productsQuery.error || movementsQuery.error;
 
   return (
     <div className="space-y-6">
@@ -80,6 +158,34 @@ export default function InventoryPage() {
           Record stock received and stock issued, with a transaction history.
         </p>
       </div>
+
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700"
+        >
+          <AlertCircle className="mt-0.5 shrink-0" size={19} />
+          <div className="flex-1">
+            <p className="font-semibold">Unable to load inventory data</p>
+            <p className="mt-1">
+              {loadError instanceof Error
+                ? loadError.message
+                : "An unexpected error occurred."}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 font-semibold"
+            onClick={() => {
+              void productsQuery.refetch();
+              void movementsQuery.refetch();
+            }}
+          >
+            <RefreshCw size={15} />
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
         <Card>
@@ -104,14 +210,23 @@ export default function InventoryPage() {
 
               <select
                 id="productId"
-                className="w-full rounded-xl border border-outline bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                disabled={productsQuery.isPending || products.length === 0}
+                className="w-full rounded-xl border border-outline bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
                 {...register("productId")}
               >
-                <option value="">Select a product</option>
-                <option value="1">Wireless Mouse (ACC-1042)</option>
-                <option value="2">USB-C Hub (ACC-1038)</option>
-                <option value="3">Mechanical Keyboard (ACC-1021)</option>
-                <option value="4">Laptop Stand (ACC-1017)</option>
+                <option value="">
+                  {productsQuery.isPending
+                    ? "Loading products..."
+                    : products.length === 0
+                      ? "No products available"
+                      : "Select a product"}
+                </option>
+
+                {products.map((product) => (
+                  <option key={product.id} value={String(product.id)}>
+                    {product.name} ({product.sku}) — Stock: {product.quantity}
+                  </option>
+                ))}
               </select>
 
               {errors.productId && (
@@ -171,22 +286,44 @@ export default function InventoryPage() {
               <textarea
                 id="note"
                 rows={3}
+                maxLength={500}
                 placeholder="e.g. Restock delivery, order fulfillment"
                 className="w-full rounded-xl border border-outline bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
                 {...register("note")}
               />
+              {errors.note && (
+                <p className="mt-1 text-xs text-danger">
+                  {errors.note.message}
+                </p>
+              )}
             </div>
 
             {notice && (
               <p
                 role="status"
-                className="rounded-lg border border-outline bg-background p-3 text-sm text-muted"
+                className={`rounded-lg border p-3 text-sm ${
+                  movementMutation.isError
+                    ? "border-red-300 bg-red-50 text-red-700"
+                    : "border-outline bg-background text-muted"
+                }`}
               >
                 {notice}
               </p>
             )}
 
-            <Button type="submit" loading={isSubmitting} className="w-full">
+            <Button
+              type="submit"
+              loading={movementMutation.isPending}
+              disabled={
+                movementMutation.isPending ||
+                productsQuery.isPending ||
+                products.length === 0
+              }
+              className="w-full"
+            >
+              {movementMutation.isPending ? (
+                <LoaderCircle className="animate-spin" size={17} />
+              ) : null}
               Record {type === "IN" ? "stock in" : "stock out"}
             </Button>
           </form>
@@ -196,46 +333,86 @@ export default function InventoryPage() {
           <div className="border-b border-outline px-5 py-4">
             <h2 className="font-bold">Recent movements</h2>
             <p className="mt-1 text-xs text-muted">
-              A history of inventory changes
+              {movements.length} transaction
+              {movements.length === 1 ? "" : "s"} recorded
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full mmin-w-145 text-left text-sm">
+            <table className="w-full min-w-[580px] text-left text-sm">
               <thead className="bg-background text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="px-5 py-3">Product</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Quantity</th>
-                  <th className="px-4 py-3">Date</th>
+                  <th scope="col" className="px-5 py-3">
+                    Product
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Type
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Quantity
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Date
+                  </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-outline">
-                {recent.map((item) => (
-                  <tr key={`${item.sku}-${item.date}`}>
-                    <td className="px-5 py-4">
-                      <p className="font-semibold">{item.product}</p>
-                      <p className="mt-1 text-xs text-muted">{item.note}</p>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <tr key={index}>
+                      {Array.from({ length: 4 }).map((__, cellIndex) => (
+                        <td key={cellIndex} className="px-4 py-5">
+                          <div className="h-4 animate-pulse rounded bg-background" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : movements.length > 0 ? (
+                  movements.map((movement) => (
+                    <tr key={movement.id}>
+                      <td className="px-5 py-4">
+                        <p className="font-semibold">{movement.product.name}</p>
+                        <p className="mt-1 text-xs text-muted">
+                          {movement.product.sku}
+                          {movement.note ? ` · ${movement.note}` : ""}
+                        </p>
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <Badge
+                          variant={movement.type === "IN" ? "success" : "info"}
+                        >
+                          {movement.type === "IN" ? "Stock in" : "Stock out"}
+                        </Badge>
+                      </td>
+
+                      <td className="px-4 py-4 font-bold">
+                        {movement.type === "IN" ? "+" : "-"}
+                        {movement.quantity}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-muted">
+                        {formatDate(movement.createdAt)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-12 text-center">
+                      <ArrowLeftRight
+                        className="mx-auto mb-3 text-muted"
+                        size={28}
+                      />
+                      <p className="font-semibold">No movements yet</p>
+                      <p className="mt-1 text-sm text-muted">
+                        Your recorded inventory transactions will appear here.
+                      </p>
                     </td>
-                    <td className="px-4 py-4">
-                      <Badge variant={item.type === "IN" ? "success" : "info"}>
-                        {item.type === "IN" ? "Stock in" : "Stock out"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-4 font-bold">
-                      {item.type === "IN" ? "+" : "-"}
-                      {item.quantity}
-                    </td>
-                    <td className="px-4 py-4 text-muted">{item.date}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
-          </div>
-
-          <div className="border-t border-outline p-5 text-xs text-muted">
-            Preview data only — transaction history will use the inventory API.
           </div>
         </Card>
       </div>
