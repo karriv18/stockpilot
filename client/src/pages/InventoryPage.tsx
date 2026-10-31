@@ -23,6 +23,8 @@ import {
   getInventoryMovements,
 } from "../services/inventoryService";
 import { useAuthStore } from "../stores/authStore";
+import type { AuthState } from "../stores/authStore";
+import { useNavigate } from "react-router-dom";
 
 const schema = z.object({
   productId: z.string().min(1, "Select a product."),
@@ -56,6 +58,8 @@ export default function InventoryPage() {
 
   const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((state: AuthState) => state.clearAuth);
 
   const {
     register,

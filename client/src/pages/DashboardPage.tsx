@@ -14,6 +14,8 @@ import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import { getDashboard } from "../services/dashboardService";
 import { useAuthStore } from "../stores/authStore";
+import { useNavigate } from "react-router-dom";
+import type { AuthState } from "../stores/authStore";
 
 const statConfig = [
   {
@@ -58,6 +60,8 @@ const formatNumber = (value: number | null | undefined) =>
 
 export default function DashboardPage() {
   const token = useAuthStore((state) => state.token);
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((state: AuthState) => state.clearAuth);
 
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["dashboard"],
@@ -65,7 +69,6 @@ export default function DashboardPage() {
       if (!token) {
         throw new Error("Your session has expired. Please log in again.");
       }
-
       return getDashboard(token);
     },
     enabled: Boolean(token),
@@ -106,39 +109,13 @@ export default function DashboardPage() {
   }
 
   if (isError || !data) {
-    return (
-      <Card className="p-6">
-        <div className="flex items-start gap-3">
-          <TriangleAlert className="mt-1 text-amber-600" size={22} />
-
-          <div>
-            <h2 className="font-bold">Unable to load dashboard</h2>
-            <p className="mt-1 text-sm text-muted">
-              {error instanceof Error
-                ? error.message
-                : "Something went wrong while fetching dashboard data."}
-            </p>
-
-            <Button
-              className="mt-4"
-              onClick={() => void refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                size={16}
-                className={isFetching ? "animate-spin" : ""}
-              />
-              {isFetching ? "Refreshing..." : "Try again"}
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
+    clearAuth();
+    navigate("/login", { replace: true });
   }
 
-  const stats = data.stats;
-  const movements = data.movements ?? [];
-  const lowStock = data.lowStock ?? [];
+  const stats = data?.stats;
+  const movements = data?.movements ?? [];
+  const lowStock = data?.lowStock ?? [];
 
   return (
     <div className="space-y-6">

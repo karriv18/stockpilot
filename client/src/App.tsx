@@ -9,6 +9,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductFormPage from "./pages/ProductFormPage";
 import InventoryPage from "./pages/InventoryPage";
+import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/products/new" element={<ProductFormPage />} />
             <Route path="/products/:id/edit" element={<ProductFormPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/me/profile" element={<ProfilePage />} />
           </Route>
         </Route>
 

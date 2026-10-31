@@ -16,6 +16,7 @@ const navigation = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Products", path: "/products", icon: Package },
   { name: "Inventory", path: "/inventory", icon: ArrowLeftRight },
+
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
