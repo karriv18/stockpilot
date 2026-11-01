@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const clearAuth = useAuthStore((state: AuthState) => state.clearAuth);
 
-  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
+  const { data, isPending, isError, refetch, isFetching } = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => {
       if (!token) {

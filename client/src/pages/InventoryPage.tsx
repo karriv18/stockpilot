@@ -136,7 +136,9 @@ export default function InventoryPage() {
   };
 
   if (!token) {
-    return (
+    clearAuth();
+    navigate("/login", { replace: true });
+    /*     return (
       <Card>
         <div className="flex flex-col items-center py-10 text-center">
           <AlertCircle className="mb-3 text-muted" size={32} />
@@ -146,7 +148,7 @@ export default function InventoryPage() {
           </p>
         </div>
       </Card>
-    );
+    ); */
   }
 
   const products = productsQuery.data ?? [];
