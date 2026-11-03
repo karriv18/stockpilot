@@ -21,6 +21,10 @@ model User {
   updatedAt    DateTime @updatedAt
   products       Product[]
   stockMovements StockMovement[]
+
+  profileImage String?
+  isActive     Boolean @default(true)
+
   @@map("users")
 }
 

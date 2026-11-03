@@ -24,7 +24,7 @@ const allowMimeTypes = new Set([
     "image/webp"
 ])
 
-export const uploadProductImage = multer({
+export const uploadProfileImage = multer({
     storage,
     limits: {
         fileSize: 5 * 1024 * 1024,

@@ -3,7 +3,6 @@ import type { AuthRequest } from "../auth/auth.middleware"
 import * as productService from "./products.service"
 import { validateProductInput } from "./products.validation"
 import fs from "node:fs/promises";
-import path from "node:path";
 
 function getId(value: string): number | null {
     if (!/^[1-9]\d*$/.test(value)) return null;
