@@ -51,8 +51,44 @@ export async function updateProfile(req: AuthRequest, res: Response) {
             res.status(404).json({ message: "Profile not found" })
             return;
         }
-        
+
         console.error("Update product failed:", error);
         res.status(500).json({ message: "Unable to update profile" });
+    }
+}
+
+export async function uploadProfileImageController(
+    req: AuthRequest,
+    res: Response
+) {
+    const id = getId(req.params.id as string);
+
+    if (id === null) {
+        res.status(400).json({ message: "Invalid profile ID" })
+        return;
+    }
+
+    if (!req.file) {
+        res.status(400).json({ message: "Profile image is required" });
+        return;
+    }
+
+    try {
+        const profile = await profileService.updateProfileImage(
+            id,
+            `/uploads/profile/${req.file.filename}`
+        );
+
+        res.status(200).json({ profile });
+    } catch (error) {
+        await fs.unlink(req.file.path).catch(() => { });
+
+        if (prismaErrorCode(error) === "P2025") {
+            res.status(404).json({ message: "Profile not found" });
+            return;
+        }
+
+        console.error("Upload product image failed:", error);
+        res.status(500).json({ message: `Unable to upload product image ${error}` });
     }
 }

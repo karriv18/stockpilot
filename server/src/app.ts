@@ -5,6 +5,7 @@ import authRoutes from "./auth/auth.routes";
 import productRoutes from "./products/products.routes";
 import inventoryRoutes from "./inventory/inventory.routes"
 import dashboardRoutes from "./dashboard/dashboard.routes";
+import profileRoutes from "./profile/profile.routes";
 
 const app = express()
 
@@ -23,10 +24,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 
 app.use("/uploads", express.static(
-  path.resolve(process.cwd(), "uploads")
+    path.resolve(process.cwd(), "uploads")
 ));
 
 app.use("/api/inventory", inventoryRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/profiles", profileRoutes);
+
 export default app;

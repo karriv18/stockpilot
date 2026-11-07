@@ -18,6 +18,6 @@ export async function updateProfileImage(
 ) {
     return prisma.user.update({
         where: { id },
-        data: { imageUrl },
+        data: { profileImage: imageUrl },
     })
 }

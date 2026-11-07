@@ -19,9 +19,11 @@ router.get("/:id", getProduct);
 router.post("/createProduct", createProduct);
 router.patch("/:id", updateProduct);
 router.delete("/:id", removeProduct);
+
 router.post(
     "/:id/image",
     uploadProductImage.single("image"),
     uploadProductImageController,
 );
+
 export default router;
