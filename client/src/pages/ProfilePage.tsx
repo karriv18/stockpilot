@@ -1,7 +1,15 @@
-
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertCircle,
+  LoaderCircle,
+  Package,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash,
   Camera,
   UserRound,
   Mail,
@@ -13,10 +21,19 @@ import {
   Upload,
 } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Badge from "../components/ui/Badge";
+import Card from "../components/ui/Card";
+import { getProfile } from "../services/profileService";
 
-const ProfilePage = () => {
+export default function ProfilePage() {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate();
+
+  const token = useAuthStore((state) => state.token);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -144,7 +161,10 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <form
+        onSubmit={handleSave}
+        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+      >
         {/* Personal Information */}
         <div className="space-y-6 lg:col-span-2">
           <section className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -313,9 +333,7 @@ const ProfilePage = () => {
                 <LockKeyhole size={19} className="text-amber-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-gray-900">
-                  Security
-                </h3>
+                <h3 className="text-base font-bold text-gray-900">Security</h3>
                 <p className="text-xs text-gray-500">
                   Keep your account secure.
                 </p>
@@ -323,9 +341,7 @@ const ProfilePage = () => {
             </div>
 
             <div className="mt-5 rounded-xl bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-800">
-                Password
-              </p>
+              <p className="text-sm font-semibold text-gray-800">Password</p>
               <p className="mt-1 text-xs leading-relaxed text-gray-500">
                 Keep your password private and update it regularly.
               </p>
@@ -368,6 +384,4 @@ const ProfilePage = () => {
       </form>
     </div>
   );
-};
-
-export default ProfilePage;
+}
