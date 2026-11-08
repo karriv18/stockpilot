@@ -20,19 +20,20 @@ import {
   X,
   Upload,
 } from "lucide-react";
+import { getProfile } from "../services/profileService";
 import { useAuthStore } from "../stores/authStore";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Badge from "../components/ui/Badge";
 import Card from "../components/ui/Card";
-import { getProfile } from "../services/profileService";
+import type { AuthState } from "../stores/authStore";
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
-
+  const clearAuth = useAuthStore((state: AuthState) => state.clearAuth);
   const token = useAuthStore((state) => state.token);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -40,6 +41,17 @@ export default function ProfilePage() {
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+
+  const { data, isPending, isError, refetch, isFetching } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: () => {
+      if (!token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+      return getProfile(user?.id ?? 0, token);
+    },
+    enabled: Boolean(token),
+  });
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,9 +88,22 @@ export default function ProfilePage() {
   const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Connect this to the Profile API when backend integration is ready.
     console.log({ name, email, selectedFile });
   };
+
+  if (!token) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center py-10 text-center">
+          <AlertCircle className="mb-3 text-muted" size={32} />
+          <h2 className="font-bold">Authentication required</h2>
+          <p className="mt-2 text-sm text-muted">
+            Please log in to view your inventory dashboard.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 pb-10">
@@ -94,7 +119,7 @@ export default function ProfilePage() {
 
       {/* Profile Header */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <div className="h-32 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600" />
+        <div className="h-32 bg-linear-to-r from-slate-800 via-slate-700 to-slate-600" />
 
         <div className="flex flex-col gap-5 px-6 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
