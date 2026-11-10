@@ -1,4 +1,5 @@
 import { Bell, Search, Menu } from "lucide-react";
+import AccountDropdown from "../AccountDropdown";
 type HeaderProps = {
   onMenuClick: () => void;
   title: string;
@@ -39,9 +40,9 @@ export default function Header({
             <Bell size={19} />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
           </button>
-          <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-            SP
-          </button>
+
+          <AccountDropdown />
+          {/* s */}
         </div>
       </div>
     </header>
