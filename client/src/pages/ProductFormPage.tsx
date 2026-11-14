@@ -207,7 +207,6 @@ export default function ProductFormPage() {
         setSavedProductId(productId);
       }
 
-      // Upload the selected image after the product has an ID.
       if (imageFile) {
         const updatedProduct = await uploadProductImage(
           productId,

@@ -70,7 +70,7 @@ export async function getProfile(
 
 export async function updateProfileImage(
     id: number | string,
-    file: File,
+    file: string,
     token: string
 ): Promise<Profile> {
     const formData = new FormData();
@@ -101,4 +101,13 @@ export async function updateProfileImage(
 
     return (payload as { profile: Profile }).profile;
 
+}
+
+export async function updateProfile(id: number | string, data: ProfileInput, token: string,): Promise<Profile> {
+    const result = await request<ProfileResponse>(`/profiles/${id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify(data)
+    })
+
+    return result.user
 }

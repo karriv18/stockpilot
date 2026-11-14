@@ -14,10 +14,25 @@ import {
   X,
   Upload,
 } from "lucide-react";
-import { getProfile } from "../services/profileService";
+import {
+  getProfile,
+  updateProfileImage,
+  type ProfileInput,
+} from "../services/profileService";
 import { useAuthStore } from "../stores/authStore";
 import Card from "../components/ui/Card";
 import type { AuthState } from "../stores/authStore";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const schema = z.object({
+  name: z.string(),
+  email: z.email("Enter a valid email address."),
+});
+
+type ProfileFormInput = z.input<typeof schema>;
+type ProfileForm = z.output<typeof schema>;
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
@@ -28,13 +43,17 @@ export default function ProfilePage() {
 
   const token = useAuthStore((state) => state.token);
 
+  const editing = Boolean(user?.id);
+
+  const [notice, setNotice] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState("");
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
 
-  const { data, isPending, isError, error } = useQuery({
+  const { data, isPending, isError } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: () => {
       if (!token) {
@@ -44,6 +63,20 @@ export default function ProfilePage() {
       return getProfile(token);
     },
     enabled: Boolean(token),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors: isSubmitting },
+  } = useForm<ProfileFormInput, unknown, ProfileForm>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: data?.user.name,
+      email: data?.user.email,
+    },
   });
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -61,14 +94,19 @@ export default function ProfilePage() {
       return;
     }
 
-    if (profileImage) URL.revokeObjectURL(profileImage);
+    if (profileImage) {
+      URL.revokeObjectURL(profileImage);
+    }
 
     setSelectedFile(file);
+
     setProfileImage(URL.createObjectURL(file));
   };
 
   const handleCancelImage = () => {
-    if (profileImage) URL.revokeObjectURL(profileImage);
+    if (profileImage) {
+      URL.revokeObjectURL(profileImage);
+    }
 
     setProfileImage(null);
     setSelectedFile(null);
@@ -78,12 +116,48 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (data: ProfileForm) => {
+    setNotice("");
+
+    if (imageError) {
+      setNotice("Please fix the image validation error before saving.");
+      return;
+    }
+
+    if (!token) {
+      setNotice("Your session has expired. Please log in again.");
+      return;
+    }
+
+    const payload: ProfileInput = {
+      name: data?.name.trim(),
+      email: data?.email.trim(),
+    };
+
+    try {
+      let profileId = user?.id;
+
+      if (profileId === null) {
+        clearAuth();
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (profileImage) {
+        const updateProfile = await updateProfileImage(
+          Number(profileId),
+          profileImage,
+          token,
+        );
+      }
+    } catch (error) {}
+  };
+  /*   const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     console.log({ name, email, selectedFile });
   };
-
+ */
   if (!token) {
     return (
       <Card>
@@ -100,16 +174,6 @@ export default function ProfilePage() {
 
   if (isPending) {
     return <div>Loading profile....</div>;
-  }
-
-  if (isError) {
-    return (
-      <Card>
-        <p className="text-red-500">
-          {error.message || "Failed to load profile."}
-        </p>
-      </Card>
-    );
   }
 
   if (isError || !data.user) {
@@ -138,11 +202,12 @@ export default function ProfilePage() {
             <div className="-mt-12">
               <div className="relative flex h-28 w-28 items-center justify-center rounded-2xl border-4 border-white bg-gray-100 shadow-sm">
                 {profileImage ? (
-                  <img
+                  /*                   <img
                     src={profileImage}
                     alt="Profile"
                     className="h-full w-full rounded-xl object-cover"
-                  />
+                  /> */
+                  "Choose another image"
                 ) : (
                   <UserRound size={42} className="text-gray-400" />
                 )}
@@ -199,7 +264,7 @@ export default function ProfilePage() {
       </div>
 
       <form
-        onSubmit={handleSave}
+        onSubmit={handleSubmit(onSubmit)}
         className="grid grid-cols-1 gap-6 lg:grid-cols-3"
       >
         {/* Personal Information */}

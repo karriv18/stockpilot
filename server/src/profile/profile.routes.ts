@@ -8,7 +8,7 @@ const router = Router();
 
 router.use(authenticationToken);
 
-router.get("/:id", updateProfile);
+router.patch("/:id", updateProfile);
 
 router.post("/:id/image",
     uploadProfileImage.single("image"),
