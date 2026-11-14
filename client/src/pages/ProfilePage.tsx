@@ -1,15 +1,9 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
-  LoaderCircle,
-  Package,
-  Plus,
-  RefreshCw,
-  Search,
-  Trash,
   Camera,
   UserRound,
   Mail,
@@ -22,9 +16,6 @@ import {
 } from "lucide-react";
 import { getProfile } from "../services/profileService";
 import { useAuthStore } from "../stores/authStore";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Badge from "../components/ui/Badge";
 import Card from "../components/ui/Card";
 import type { AuthState } from "../stores/authStore";
 
@@ -34,6 +25,7 @@ export default function ProfilePage() {
 
   const navigate = useNavigate();
   const clearAuth = useAuthStore((state: AuthState) => state.clearAuth);
+
   const token = useAuthStore((state) => state.token);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -42,13 +34,14 @@ export default function ProfilePage() {
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
 
-  const { data, isPending, isError, refetch, isFetching } = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: () => {
       if (!token) {
         throw new Error("Your session has expired. Please log in again.");
       }
-      return getProfile(user?.id ?? 0, token);
+
+      return getProfile(token);
     },
     enabled: Boolean(token),
   });
@@ -103,6 +96,25 @@ export default function ProfilePage() {
         </div>
       </Card>
     );
+  }
+
+  if (isPending) {
+    return <div>Loading profile....</div>;
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <p className="text-red-500">
+          {error.message || "Failed to load profile."}
+        </p>
+      </Card>
+    );
+  }
+
+  if (isError || !data.user) {
+    clearAuth();
+    navigate("/login", { replace: true });
   }
 
   return (

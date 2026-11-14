@@ -4,10 +4,10 @@ export type Profile = {
     id: number;
     name: string;
     email: string;
-    profileImageUrl?: string | null;
-    isActive: boolean;
+    // profileImageUrl?: string | null;
+    // isActive: boolean;
     createdAt?: string;
-    updatedAt?: string;
+    // updatedAt?: string;
 }
 
 export type ProfileInput = {
@@ -17,7 +17,7 @@ export type ProfileInput = {
 }
 
 type ProfileResponse = {
-    profile: Profile;
+    user: Profile;
 }
 
 async function request<T>(
@@ -60,15 +60,11 @@ async function request<T>(
 }
 
 export async function getProfile(
-    id: number | string,
     token: string
-): Promise<Profile> {
-    const result = await request<ProfileResponse>(
-        `/profiles/${id}`,
-        token
-    );
-
-    return result.profile;
+): Promise<ProfileResponse> {
+    return request<ProfileResponse>("/auth/me", token, {
+        method: "GET",
+    });
 }
 
 
